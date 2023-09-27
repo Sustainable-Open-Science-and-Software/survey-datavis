@@ -1,0 +1,367 @@
+@use "sass:color";
+
+$color-solid-red: rgba(255, 99, 132, 1);
+$color-solid-orange: rgba(255, 159, 64, 1);
+$color-solid-yellow: rgba(255, 205, 86, 1);
+$color-solid-green: rgba(75, 192, 192, 1);
+$color-solid-blue: rgba(54, 162, 235, 1);
+$color-solid-purple: rgba(153, 102, 255, 1);
+$color-solid-grey: rgba(201, 203, 207, 1);
+$color-faded-red: rgba(255, 99, 132, 0.2);
+$color-faded-orange: rgba(255, 159, 64, 0.2);
+$color-faded-yellow: rgba(255, 205, 86, 0.2);
+$color-faded-green: rgba(75, 192, 192, 0.2);
+$color-faded-blue: rgba(54, 162, 235, 0.2);
+$color-faded-purple: rgba(153, 102, 255, 0.2);
+$color-faded-grey: rgba(201, 203, 207, 0.2);
+
+$text-color: rgba(0, 0, 0, 0.76);
+$main-bg-color: #f4f4f9;
+$highlight-color:#00BCD4;
+$contrast-color:#f2ae0f;
+
+$color-ongoing: $color-faded-blue;
+$color-declined: $color-faded-red;
+$color-inactive: $color-faded-purple;
+$color-activated: $color-faded-yellow;
+
+
+body {
+  background-color: $main-bg-color;
+  color: $text-color;
+}
+
+dl {
+  background-color: #f7f7fc;
+
+  div {
+
+    &.declined,
+    &.DECLINED,
+    &.activated,
+    &.ACTIVATED,
+    &.INACTIVE,
+    &.inactive,
+    &.ongoing,
+    &.ONGOING {
+      background-color: lighten($main-bg-color, 10%);
+      margin-top: 2px;
+      border-radius: 1em 0em 1em 0em;
+
+      &:before {
+        content: none
+      }
+    }
+  }
+}
+
+dt {
+  font-weight: bold;
+  background-color: #f7f7fc
+}
+
+dd {
+  font-size: 90%;
+  margin-bottom: 2px;
+  padding-left: 0.5em;
+}
+
+h3,
+h4 {
+  clear: both;
+  border-bottom: dotted #80DEEA 2px;
+  background-color: #ECEFF1;
+  padding: 0.25em 0.5em;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  border-radius: 1em 0em 1em 0em;
+}
+
+h1 {
+  background-color: scale-color($highlight-color, $alpha: -60%);
+  margin: -0.75em -0.7em 0.5em -0.7em;
+  padding: 0.25em 0.5em;
+  color: #fff;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  border-radius: 1em 0em 1em 0em;
+}
+
+.aggGraph {
+  background-color: #fff;
+  margin: 1em;
+  padding: 1em;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 1em 1.1em 2px 2px;
+
+  page-break-after: always;
+
+  h2 {
+    border-style: solid;
+    margin-top: -0.75em;
+    margin-left: -0.75em;
+    margin-right: -0.75em;
+  }
+  table td {text-align: center;}
+  tbody tr:nth-child(1) {font-style: italic;}
+}
+
+.column {
+  column-width: 16em;
+  column-count: 3;
+}
+
+.sidebar_style {
+  display: flex;
+  flex-wrap: reverse;
+  flex-direction: row;
+}
+
+.sidebar {
+  margin: 1em;
+  width: 25%;
+
+  h1,
+  h2,
+  h3,
+  h4.status {
+    border-style: solid;
+    margin-bottom: 0.2em;
+  }
+
+  .projectName {
+    font-family: monospace;
+    width: 6em;
+    display: inline-block;
+    font-size: 90%;
+  }
+}
+
+.projectName {
+  width: auto;
+}
+
+.vis {
+  width: 65%
+}
+
+
+
+.status {
+  border: solid 1px;
+  border-left: solid 1em transparent; //this is to make the shape right
+  border-right: solid 1em transparent;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  border-radius: 1em 0em 1em 0em;
+
+  &:before {
+    content: "🏷 ";
+  }
+}
+
+.statuses {
+  margin-left: 0.5em;
+  font-size: 90%;
+  display: block;
+}
+
+.repo {
+  border-left: solid 2px transparent;
+  background-color: transparent;
+  margin-bottom: 2px;
+  padding-left: 2px;
+}
+
+.declined,
+.DECLINED {
+  border-color: scale-color($color-declined, $alpha: 100%);
+  background-color: $color-declined;
+  color: $text-color;
+
+  &:before {
+    content: "⤵️ ";
+  }
+}
+
+.inactive,
+.INACTIVE {
+  border-color: scale-color($color-inactive, $alpha: 100%);
+  background-color: $color-inactive;
+  color: $text-color;
+
+  &:before {
+    content: "⏹ ";
+  }
+}
+
+.activated,
+.ACTIVATED {
+  border-color: scale-color($color-activated, $alpha: 100%);
+  background-color: $color-activated;
+  color: $text-color;
+
+  &:before {
+    content: "⤴️ ";
+  }
+}
+
+// This needs to be last, as it then cascades to the main status, if the project has multiple repos.
+.ongoing,
+.ONGOING {
+  border-color: scale-color($color-ongoing, $alpha: 100%);
+  background-color: $color-ongoing;
+  color: $text-color;
+
+  &:before {
+    content: "➡️ ";
+  }
+}
+
+.repo {
+  background-color: transparent;
+}
+
+.subtitle {
+  &:before {
+    content: none;
+  }
+
+  border-radius:2px
+}
+
+.repoInfo,
+.repoInfo:visited {
+  background-color: scale-color($highlight-color);
+  border: solid 1px scale-color($highlight-color, $saturation: 40%);
+  color: #f4f4f9;
+  text-shadow: 1px 1px 1px scale-color($text-color, $alpha: -20%);
+  display: inline-block;
+  border-radius: 4px 4px 0px 0px;
+  margin: 2px 4px 0 2px;
+  padding: 2px 6px;
+
+  &:hover {
+    background-color: scale-color($highlight-color, $alpha: -30%);
+    color: #f4f4f9;
+    text-shadow: 1px 1px 1px scale-color($text-color, $alpha: -20%);
+    box-shadow: 1px 1px 1px 1px scale-color($highlight-color, $saturation: -20%);
+  }
+}
+
+.repoLinks {
+  border-bottom: solid 1px $contrast-color;
+  margin-bottom: 1em;
+}
+
+.pageTypesurvey .survey,
+.pageTyperepo .repo {
+  border-radius: 4px 4px 0px 0px;
+  border: solid 1px scale-color($contrast-color, $saturation: 40%);
+
+  &:hover {
+    background-color: $contrast-color;
+    box-shadow: none;
+    text-decoration: none;
+  }
+
+  background-color: $contrast-color;
+}
+
+table.status {
+  background-color: $main-bg-color;
+  border-width: 2px;
+
+  &:before {
+    content: none;
+  }
+}
+
+.archetypes span {
+  border: #ECEFF1;
+  border-radius: 2px;
+  padding: 2px 4px;
+}
+
+.legend {
+  align-items: center;
+  display: flex;
+
+  ul {
+    display: flex;
+    flex-direction: row;
+    list-style-type:none;
+    align-items:flex-start;
+    flex-grow:1;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    border:solid $color-solid-grey 1px;
+    border-radius: 8px;
+    padding:0.4em;
+  }
+
+  li {
+    display: flex;
+    flex-direction: row;
+    align-items:center;
+    margin-left:10px;
+    flex-grow:1;
+  }
+
+  .box {
+    border-width: 2px;
+    border-style: solid;
+    height: 20px;
+    margin-right: 10px;
+    width: 20px;
+  }
+
+  p {
+    margin: 0;
+    padding: 0;
+    &::first-letter{
+      text-transform: capitalize;
+    }
+  }
+}
+
+
+@media print {
+
+  // print 
+  .sidebar {
+    display: none;
+  }
+
+  .vis {
+    width: 100%;
+    min-width: 95%;
+    font-size: 8pt;
+    margin-left: 0;
+    padding-left: 0;
+    margin-right: 0;
+    padding-right: 0;
+
+    h2 {
+      margin-left: 0;
+      padding-left: 0;
+      margin-right: 0;
+      padding-right: 0;
+    }
+  }
+
+  .aggGraph {
+    padding: 0;
+  }
+
+  h1 {
+    margin-left: 0;
+  } 
+
+  table td {
+    padding: 2px;
+    text-align: center;
+  }
+}

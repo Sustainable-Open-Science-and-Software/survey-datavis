@@ -1,0 +1,13 @@
+{%- include sidebar_page_head.liquid -%}
+
+{% assign activity = site.data.still-active-checks-with-url-columns.rows %}
+<!-- About 100 rows of the survey are blank. We don't need to see 'em. -->
+{% for survey in site.data.surveys.OSS0 %}
+  {% assign project = survey.ProjectPseudonym %}
+  {% assign projectPseudonym = project %}
+  {% assign participating_project = activity[project] %}
+
+  {%- include single_survey.liquid -%}
+
+
+{% endfor %}

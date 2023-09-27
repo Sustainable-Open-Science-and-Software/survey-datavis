@@ -1,0 +1,375 @@
+---
+title: GeneralAgg
+layout: aggregate_reports
+---
+
+<div class="aggGraph">
+  <table id="contributing">
+    <thead>
+      <th>Licence type</th>
+      <th> # of projects</th>
+    </thead>
+    <tbody>
+
+    </tbody>
+  </table>
+</div>
+
+
+<div class="aggGraph">
+  <table>
+    <thead>
+      <th>Licence type</th>
+      <th> # of projects</th>
+    </thead>
+    <tbody id="licenceBody">
+
+    </tbody>
+  </table>
+</div>
+
+<div class="aggGraph">
+  <h3>Commits during the study period</h3>
+  <canvas id="commitsGraphAge"></canvas>
+  <canvas id="commitsGraphScale"></canvas>
+  <div id="noCommits"></div>
+</div>
+
+
+<div class="aggGraph">
+  <canvas id="timelineAnchor"></canvas>
+  <div>Mean project age:
+    <span id="meanProjAge"></span>
+    years
+  </div>
+  <div>Median project age:
+    <span id="medianProjAge"></span>
+    years
+  </div>
+  Project ages:
+  <table id="projAgeTable">
+    <thead>
+      <tr>
+        <th>0-4 years</th>
+        <th>5-9 years</th>
+        <th>10-19 years</th>
+        <th>20+ years</th>
+
+      </tr>
+    </thead>
+    <tr>
+      <td id="age0"></td>
+      <td id="age5"></td>
+      <td id="age10"></td>
+      <td id="age20"></td>
+    </tr>
+  </table>
+
+</div>
+
+<script>
+
+  const generateLicenceTable = function () {
+    let elem = document.getElementById("licenceBody");
+    let html = ``;
+    let vals = Object.entries(aggLicences["license - spdx_id"]);
+    vals = vals.sort(function (a, b) {
+      return sorts.numeric(a[1], b[1]);
+    }).reverse();
+    vals.map(function ([name, count]) {
+      html += `<tr>
+        <td>${name}</td>
+        <td>${count}</td>       
+      </tr>`;
+    });
+    elem.innerHTML = html;
+  };
+
+  generateLicenceTable()
+
+
+  const generateTableHead = function (cells) {
+    let html = `
+    <thead>
+      <tr>`;
+
+    cells.map(function (cell) {
+      html += `<th>${cell}</th>`;
+    });
+
+    html += `</tr>
+      </thead>
+    `
+    return html;
+  }
+  /**
+   * @argument {string} tableId - A string that correlates to a <table> element
+   * @argument {string[]} columns - An Array of string headers for columns
+   * @argument {Object[]} data - an array of aggregated values as k/v pairs that matches the columns
+   * @argument {string} sortBy - sort method from sorts
+  **/
+  const generateTable = function (config) {
+
+    let elem = document.getElementById(config.elemId);
+    let html = ``;
+    //we need a "primary" column to sort by
+    //and tto grab row names from
+    //but we can't sort an object, so cnvert it to aray of kv pairs
+    let primaryCol = Object.entries(config.data[0]); 
+      if (config.sortBy) {
+        primaryCol = primaryCol.sort(function (a, b) {
+          return sorts[config.sortBy](a[1], b[1]);
+        }).reverse();
+      }
+
+    html += generateTableHead(config.columns);
+
+    let cell = function (data) {
+      return `<td>${data}</td>`;
+    }
+    primaryCol.map(function ([name, count]) {
+      //don't add a row if keepnulls is false.
+      let printThisRow = (name !== "null"); 
+      //I know it's foul but null got stringified into null somewhere along tthe line.
+      //so we should only print "nulls" if keepnulls is true
+      printThisRow = printThisRow || config.keepNulls
+
+      if(printThisRow) {
+      //add primary column
+      html += `<tr>
+        ${cell(name)}
+        ${cell(count)}`  
+        //add all other columns if any
+        for(let i = 1; i < config.data.length; i++){
+          let theCell = config.data[i][name];
+          html += cell(theCell);
+        }
+        //close the tr
+        html += `</tr>`;
+      }
+    });
+    elem.innerHTML = html;
+  };
+
+  let tableConfig = [{
+    elemId : "contributing",
+    columns : ["Contributing guidance found?","Month0", "Month12"],
+    data : [contributingAgg.contributingGuidelines_m0,
+    contributingAgg.contributingGuidelines_m12],
+    sortBy : "numeric",
+    keepNulls : false
+}
+
+  ]
+
+  tableConfig.map(function(config){
+    generateTable(config);
+  });
+
+  const generateCommitChart = function (elem, sortBy) {
+    try {
+      let visData = [];
+
+      commits.checks.byCommits.map(function (row) {
+        let nonAnon = row.repoName;
+        let pseu = pseudonyms[nonAnon];
+        row.ProjectPseudonym = pseu;
+        let age = agesByProjName[pseu];
+        let size = sizesByProjName[pseu]
+        row.scale = row["project-user-count"] = size;
+        row.age = new Date(age).getFullYear();
+        if (!isNaN(row.age)) {
+          visData.push(row);
+        } else {
+          //NaNs are incomplete responses that gave urls
+          //dump nans - tthey'rer no use and they are confusing
+        }
+      });
+
+      if (sortBy) {
+        visData = visData.sort(sorts[sortBy]);
+      }
+
+      return new Chart(document.getElementById(elem), {
+        type: 'bar',
+        data: {
+          datasets: [
+            {
+              data: visData,
+              stack: 'Stack 0',
+              yAxisID: 'y',
+              parsing: {
+                yAxisKey: 'repoName', xAxisKey: 'commitCount'
+              },
+              datalabels: { display: false }
+            }
+          ]
+        },
+        options: {
+          aspectRatio: 0.7,
+          indexAxis: 'y',
+          scales: {
+            y: {
+              ticks: {
+                callback: function (value, index, ticks) {
+                  let nonAnon = this.getLabelForValue(value);
+                  let pseu = pseudonyms[nonAnon];
+                  return pseu;
+                },
+                autoSkip: false
+              }
+            }, x: {
+              //        type: 'logarithmic'
+            }, y2: {
+              title: {
+                display: true,
+                text: sortBy
+              },
+              position: 'right',
+              grid: {
+                drawOnChartArea: false // only want the grid lines for one axis to show up
+              },
+              ticks: {
+                callback: function (value, index, ticks) {
+                  return visData[index][sortBy];
+                },
+                autoSkip: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            title: {
+              display: true,
+              text: "Commits per project"
+            }
+          }
+        }
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  ///////////////////////////////
+
+  // we want the years for a histogram
+  let foundedYears = [];
+  timeData.map(function (proj) {
+    let time = luxon.DateTime.fromISO(proj["project-founded"]);
+    if (!time.invalid) {
+      foundedYears.push(time);
+    }
+  });
+
+  // make buckets for each year
+  foundedYears = foundedYears.sort();
+  let yearsHist = {};
+  let start = foundedYears[0].year;
+  let end = foundedYears[foundedYears.length - 1].year;
+
+  for (var i = start; i <= end; i++) {
+    yearsHist[i] = 0;
+  }
+
+  // count projects founded in any year
+  foundedYears.map(function (proj) {
+    let yearProjFounded = proj.year;
+
+    // add one more to the count for each project founded in this year
+    yearsHist[yearProjFounded]++;
+  })
+
+  const tl = document.getElementById('timelineAnchor');
+
+  new Chart(tl, {
+    type: 'bar',
+    data: {
+      datasets: [
+        {
+          label: '# of projects founded in this year',
+          data: yearsHist,
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      scales: {
+        x: {
+          type: 'time',
+          time: { // Luxon format string
+            unit: 'year'
+          }
+        }
+      }
+    }
+  });
+
+  // calculate ages of projects in years
+  // as opposed to reporting year founded
+
+  let projAges = foundedYears.map(function (projFounded) {
+
+    // this is a hardcode. please still love me.
+    let surveyStart = luxon.DateTime.fromISO("2021-06-01");
+    let i = luxon.Interval.fromDateTimes(projFounded, surveyStart);
+    return i.length('years')
+  });
+
+  // calculate mean
+  let totalAge = 0;
+  projAges.map(function (age) {
+    totalAge = totalAge + age;
+  });
+
+  // round it a little, please. This rounds to one decimal
+  function round(num) {
+    return Math.round(num * 10) / 10;
+  }
+
+  let meanAge = totalAge / projAges.length;
+  meanAge = round(meanAge);
+  document.getElementById("meanProjAge").innerHTML = meanAge;
+
+  let medianAge,
+    middleVal;
+  if (projAges.length % 2 == 1) {
+    middleVal = projAges.length / 2 + 0.5
+    medianAge = projAges[middleVal];
+  } else {
+    middleVal = projAges.length / 2;
+    medianAge = (projAges[middleVal] + projAges[middleVal + 1]) / 2;
+  } medianAge = round(medianAge);
+  document.getElementById("medianProjAge").innerHTML = medianAge;
+
+  // calculate project ages in age buckets...
+  let ageBuckets = {
+    "zeroToFour": 0,
+    "fiveToNine": 0,
+    "tenToNineteen": 0,
+    "twentyPlus": 0
+  }
+
+  projAges.map(function (age) {
+    if (age < 5) {
+      ageBuckets.zeroToFour++;
+    } else if (age < 10) {
+      ageBuckets.fiveToNine++;
+    } else if (age < 20) {
+      ageBuckets.tenToNineteen++;
+    } else {
+      ageBuckets.twentyPlus++;
+    }
+  });
+  document.getElementById("age0").innerHTML = ageBuckets.zeroToFour;
+  document.getElementById("age5").innerHTML = ageBuckets.fiveToNine;
+  document.getElementById("age10").innerHTML = ageBuckets.tenToNineteen;
+  document.getElementById("age20").innerHTML = ageBuckets.twentyPlus;
+
+  //
+  generateCommitChart('commitsGraphAge', "age");
+  generateCommitChart('commitsGraphScale', "scale");
+
+</script>

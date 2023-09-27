@@ -1,0 +1,76 @@
+<script>
+    const colors = { // using chart.js colours :D 
+        solid: {
+            red: 'rgba(255, 99, 132,1)',
+            orange: 'rgba(255, 159, 64,1)',
+            yellow: 'rgba(255, 205, 86,1)',
+            green: 'rgba(75, 192, 192,1)',
+            blue: 'rgba(54, 162, 235,1)',
+            purple: 'rgba(153, 102, 255,1)',
+            grey: 'rgba(201, 203, 207,1)'
+        },
+        faded: {
+            red: pattern.draw("cross", "rgba(255, 99, 132,0.2)"),
+            orange: pattern.draw("square", 'rgba(255, 159, 64,0.2)'),
+            yellow: pattern.draw("zigzag", 'rgba(255, 205, 86,0.2)'),
+            green: pattern.draw("ring", 'rgba(75, 192, 192,0.2)'),
+            blue: pattern.draw("dot", 'rgba(54, 162, 235,0.2)'),
+            purple: pattern.draw("disc", 'rgba(153, 102, 255,0.2)'),
+            grey: pattern.draw("diamond-box", 'rgba(201, 203, 207,0.2)')
+        }, 
+        scaled: {
+            c100 : 'rgba(54, 162, 235,1)',
+            c90 : 'rgba(54, 162, 235,0.9)',
+            c80 : 'rgba(54, 162, 235,0.8)',
+            c70 : 'rgba(54, 162, 235,0.7)',
+            c60 : 'rgba(54, 162, 235,0.6)',
+            c50 : 'rgba(54, 162, 235,0.5)',
+            c40 : 'rgba(54, 162, 235,0.4)',
+            c30 : 'rgba(54, 162, 235,0.3)',
+            c20 : 'rgba(54, 162, 235,0.2)',
+            c10 : 'rgba(54, 162, 235,0.1)',
+            c0: 'rgba(54, 162, 235,0)'
+        }
+
+    },
+        backgroundColors = {
+            ONGOING: colors.faded.blue,
+            DECLINED: colors.faded.red,
+            INACTIVE: colors.faded.purple,
+            ACTIVATED: colors.faded.yellow
+        }, borderColors = {
+            ONGOING: colors.solid.blue,
+            DECLINED: colors.solid.red,
+            INACTIVE: colors.solid.purple,
+            ACTIVATED: colors.solid.yellow
+        }, bgColorsArray = function (commits, alive, border) {
+            return commits.map(function (commit) {
+                let r = commit.repoName,
+                    isAlive = alive[r];
+                if (border) {
+                    return borderColors[isAlive];
+                } else {
+                    return backgroundColors[isAlive];
+                }
+            });
+        };
+        //these arre deprecated, pls migrate to the nice defs above;
+        const backgroundColor = [
+        'rgba(54, 162, 235, 0.2)',
+        'rgba(153, 102, 255, 0.2)',
+        'rgba(255, 205, 86, 0.2)',
+        'rgba(75, 192, 192, 0.2)',
+        'rgba(255, 99, 132, 0.2)',
+        'rgba(201, 203, 207, 0.2)',
+        'rgba(255, 159, 64, 0.2)',
+    ];
+    const borderColor = [
+        'rgb(54, 162, 235)',
+        'rgb(153, 102, 255)',
+        'rgb(255, 205, 86)',
+        'rgb(75, 192, 192)',
+        'rgb(255, 99, 132)',
+        'rgb(201, 203, 207)',
+        'rgb(255, 159, 64)',
+    ];
+</script>

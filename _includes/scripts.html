@@ -1,0 +1,66 @@
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.0.4/build/global/luxon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.2.0/dist/chartjs-adapter-luxon.min.js"></script>
+<script src=" https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js "></script>
+<script src="https://cdn.jsdelivr.net/npm/patternomaly@1.3.2/dist/patternomaly.min.js"></script>
+
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+
+{%- include bg_colors.html -%}
+
+{% assign survey12 = site.data.surveys.OSS12 | where_exp:"item",
+  "item.project-open-contrib != nil and item.project-open-contrib.size < 4 "|jsonify %}
+
+<script>
+    //Default chart js: 
+    Chart.defaults.elements.bar.borderWidth = 1;
+    Chart.defaults.elements.bar.borderRadius = 1;
+    Chart.defaults.elements.bar.borderSkipped= false;
+
+    //adding a nice chartjs plugin for labelling datapoints: 
+    Chart.register(ChartDataLabels);
+
+    //strip out empty vars.
+    var survey0 = {{ site.data.surveys.OSS0 | where_exp:"item",
+  "item.project-open-contrib != nil and item.project-open-contrib.size < 4 "| jsonify}};
+    var survey6 = {{ site.data.surveys.OSS6 | where_exp:"item",
+  "item.project-open-contrib != nil and item.project-open-contrib.size < 4 "|jsonify}};
+    var survey12 = {{survey12}};
+
+    //set up useful vars
+    const questionText = {{ site.data.surveys.OSS0[0] | jsonify}};
+    const ages = timeData = {{site.data.surveys.project_founding_dates | jsonify}};
+    const sizes =  {{site.data.pseudo-to-size | jsonify}};
+    const agesByProjName = {};
+    const sizesByProjName = {};
+
+    var jobtitles = {{site.data.surveys.jobtitles| jsonify}};
+    //why won't jekyll just give me an array? 
+    //this makes jobtitles the shape I need.
+    jobtitles = jobtitles.map(function(job){
+      return job.role;
+    });
+
+    const commits = {{site.data.aggregate.report_countCommits | jsonify}};
+    const pseudonyms = {{site.data.project-name-to-pseudonym | jsonify}};
+
+    ages.map(function(proj){
+      agesByProjName[proj.ProjectPseudonym] = proj["project-founded"];
+    });
+    sizes.map(function(proj){
+      sizesByProjName[proj.ProjectPseudonym] = proj["project-user-count"];
+    });
+    
+    const dt = luxon.DateTime;
+    const dur = luxon.Duration;
+</script>
+
+<script src="/js/index.js"></script>
+
+<script>
+   {% include js/aggCharts.js %}
+   {% include js/aggTable.js %}
+</script>

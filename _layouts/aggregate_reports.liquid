@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: " en" }}">
+
+  {%- include head.html -%}
+
+  <body>
+
+    {%- include scripts.html -%}
+    {%- include header.html -%}
+
+    <script>
+      function aggregateRows(rows) {
+        let aggResponse = {};
+
+// count keys needed.
+        let keys = Object.keys(rows[0]);
+        rows.map(function(proj) {
+          keys.map(function(k) {
+            if (aggResponse.hasOwnProperty(k)) { // add one more layer
+              let pk = proj[k];
+              if (aggResponse[k].hasOwnProperty(pk)) {
+                aggResponse[k][pk]++;
+              } else {
+                aggResponse[k][pk] = 1;
+              }
+            } else {
+              aggResponse[k] = {};
+            }
+          });
+        });
+        return aggResponse
+      }
+      let contributing = {{site.data.All_months_community | jsonify}};
+      let contributingAgg = aggregateRows(contributing);
+
+      let licences = {{site.data.aggregate.Month0Licence | jsonify}};
+      let aggLicences = aggregateRows(licences);
+    </script>
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <h1>{{ page.title }}</h1>
+
+        {{ page.content }}
+
+      </div>
+
+    </main>
+
+    {%- include footer.html -%}
+
+  </body>
+
+</html>

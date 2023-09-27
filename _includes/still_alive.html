@@ -1,0 +1,60 @@
+<div>
+    {% assign alive = site.data.aggregate.report_stillAlive %}
+    <h3>Still Alive breakdown by repo</h3>
+    <h4>Counts </h4>
+    <canvas id="stillAliveSummary"  ></canvas>
+
+</div>
+
+<script>
+
+    const statusCounts = {{ alive.checks.statusCounts | jsonify }},
+    aliveArr = {{ alive.checks.repoSummary | jsonify }};
+
+    let statusColors = sc = { // sugar so it doesn't get too long
+        counts : [],
+        colors : [],
+        borders : []
+    };
+
+    //format the data so we can colour the bars nicely. 
+    for (status in statusCounts) {
+        let color = backgroundColors[status],
+        border= borderColors[status];
+        sc.counts.push({
+            status : status,
+            count : statusCounts[status]
+        });
+        sc.colors.push(color);
+        sc.borders.push(border);
+    }
+
+    const config = {
+        type: 'bar',
+        data: {
+            datasets: [{
+                label: 'Repo activity, mid 2021 to mid/late 2022.',
+                data: sc.counts,
+                backgroundColor: sc.colors,
+                borderColor : sc.borders,
+                borderWidth:1
+            }]
+        },
+        options: {
+            parsing:{
+                xAxisKey : "status",
+                yAxisKey : "count"
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        },
+        plugins: { legend: false }
+    };
+
+    let chart = new Chart(
+        document.getElementById('stillAliveSummary'), config);
+
+</script>

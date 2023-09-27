@@ -1,0 +1,69 @@
+<div class="sidebar">
+  <div>
+    <h4>Status meanings</h4>
+    <dl>
+      <div class="declined">
+        <dt class="declined status">Declined:
+        </dt>
+        <dd>Was active, now inactive</dd>
+      </div>
+      <div class="activated">
+        <dt class="activated status">Activated:
+        </dt>
+        <dd>Was inactive, now active</dd>
+      </div>
+
+      <div class="ongoing">
+        <dt class="ongoing status">Ongoing:
+        </dt>
+        <dd>Was active at start and end of study</dd>
+      </div>
+      <div class="inactive">
+        <dt class="inactive status">Inactive:
+        </dt>
+        <dd>Was inactive at start and end of study</dd>
+      </div>
+    </dl>
+    {% assign alive = site.data.aggregate.report_stillAlive %}
+
+    {% assign statuses = "ACTIVATED, DECLINED, INACTIVE, ONGOING" | split: ", " %}
+
+    {% for status in statuses %}
+
+      <h4 class="status {{status}}">{{ status }}</h4>
+      <div class="statuses">
+        {% assign repos = alive.checks.byStatus[status] | sort_natural %}
+        {% for repo in repos %}
+
+          {% assign projectName = repo %}
+          {% assign projectPseudonym = site.data.project-name-to-pseudonym[repo] %}
+
+          {% capture pseudonymAndName %}
+
+            {% if projectName and projectPseudonym %}
+              <span class="projectName">
+                {{ projectPseudonym }}
+              </span>
+              |
+              {{ projectName }}
+            {% elsif projectName %}
+              {{ projectName }}
+            {% elsif projectPseudonym %}
+              {{ projectPseudonym }}
+            {% else %}
+              🐞 No project name.
+            {% endif %}
+
+          {% endcapture %}
+
+          <div class="repo {{status}}">
+            <a href="/repo/{{repo}}">{{ pseudonymAndName }}</a>
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div>URLs queried: {{ alive.urlsSubmitted }}, Successful results retrieved for: {{ alive.successfulResults }} repos.
+  </div>
+</div>
