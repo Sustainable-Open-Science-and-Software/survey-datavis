@@ -83,7 +83,27 @@ const colForChart = {
     "I would close the project down": {
         border: colors.solid.red,
         bg: colors.faded.red
-    }
+    },
+    true: {
+        border: colors.solid.blue,
+        bg: colors.faded.blue
+    },
+    false : {
+        border: colors.solid.yellow,
+        bg: colors.faded.yellow
+    }, 
+    ".github" : {
+        border: colors.solid.purple,
+        bg: colors.faded.purple
+    },
+    "search" : {
+        border: colors.solid.purple,
+        bg: colors.faded.purple
+    },
+    "docs" : {
+    border: colors.solid.purple,
+    bg: colors.faded.purple
+}
 }
 
 //never update this directly, please update by reference to colForChart.
@@ -102,6 +122,13 @@ const colForLegend = {
         "Yes": colForChart["Yes"],
         "No": colForChart["No"],
         "No answer": colForChart["No answer"]
+    },
+    category: {
+        true:colForChart[true],
+        false:colForChart[false],
+        ".github":colForChart[".github"],
+        "search":colForChart["search"],
+        "docs":colForChart["docs"]
     },
     activity: {
         "still active and being maintained/updated, me still contributing": colForChart["still active and being maintained/updated, me still contributing"],
@@ -432,7 +459,9 @@ const generateElem = function (config, anAnchor, canvas) {
 
     header = document.createElement("div");
     header.classList = "questionText";
-    txt = document.createTextNode(questionText[config.name]);
+    let elemTitle = questionText[config.name];
+    if(!elemTitle) { elemTitle = (config.title || config.name);}
+    txt = document.createTextNode(elemTitle);
     header.appendChild(txt);
 
     if (anAnchor) { a = anAnchor; } else { a = "aggregateAnchor" }

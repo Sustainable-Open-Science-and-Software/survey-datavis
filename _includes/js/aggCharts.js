@@ -314,3 +314,201 @@ const generateExpChart = function (config, sortBy, elem) {
         console.error(e);
     }
 }
+
+const makeVisDataForCoC = function(data, attr) {
+ // stripe the data, so the chart likes it.
+ let visData = {
+    names: Object.keys(data),
+    m0: [], // data for month 0
+    m12: [], // data for month 12
+    y2: [], // but of course, this is data for
+    // axis y2, not a year 
+    colors: {
+        bg: {
+            m0: [],
+            m12: []
+        },
+        border: {
+            m0: [],
+            m12: []
+        }
+    }
+};
+
+Object.values(data).map(function (row) {
+    let e = row[attr];
+    visData.m0.push(e.m0);
+    visData.m12.push(e.m12);
+    visData.y2.push(e.y2);
+        visData
+            .colors
+            .bg
+            .m0
+            .push(colorForChart(e.m0, true));
+        visData
+            .colors
+            .bg
+            .m12
+            .push(colorForChart(e.m12, true));
+        visData
+            .colors
+            .border
+            .m0
+            .push(colorForChart(e.m0));
+        visData
+            .colors
+            .border
+            .m12
+            .push(colorForChart(e.m12));
+    
+});
+
+    return visData;
+};
+
+const generateCoCChart = function (config, sortBy, elem) {
+    let cocsorted = [];
+    try {
+        contrib_and_coc.map(function (row) {
+            if (row.cocPresent_m0) {
+            let proj = row.ProjectPseudonym.trim();
+            let y2Val = new Date(agesByProjName[proj]).getFullYear();
+            cocsorted[proj] = {
+                coc: {
+                    m0: row.cocPresent_m0, 
+                    m12: row.cocPresent_m12,
+                    y2: y2Val
+                },
+                contrib: {
+                    m0: row.contributingGuidelines_m0,
+                    m12:row.contributingGuidelines_m12,
+                    y2: y2Val
+                }
+            };
+        }
+        });
+
+
+        let visData = makeVisDataForCoC(cocsorted, config.visType);
+
+        let fill = Array(visData.m0.length).fill(1);
+        let fill1 = Array(visData.m0.length).fill(0);
+        // this positions the labels on half-ticks, which looks a lot better.
+        let months = [
+            null,
+            "Month 0",
+            null,
+            "Month 12"
+        ];
+
+        //note that this returns a partially composed function,
+        //NOT a static value.
+        function datalabelsFormatter(dataset) {
+            if (config.datalabels) {
+                return function (value, context) {
+                    if (dataset[context.dataIndex]) {
+                        return dataset[context.dataIndex]
+                    }
+                    return "";
+                }
+            } else {
+                return function () { return "" }; // no label
+            }
+        }
+        let theid = 'chart' + config.name + elem;
+        return new Chart(document.getElementById(theid), {
+            type: 'bar',
+            data: {
+                labels: visData.names,
+                datasets: [
+                    {
+                        data: fill,
+                        backgroundColor: visData.colors.bg.m0,
+                        borderColor: visData.colors.border.m0,
+                        stack: 'Stack 0', datalabels: {
+                            formatter: datalabelsFormatter(visData.m0)
+                        }, yAxisID: 'y'
+                    }, {
+                        data: fill,
+                        datalabels: {
+                            formatter: datalabelsFormatter(visData.m12)
+                        },
+                        backgroundColor: visData.colors.bg.m12,
+                        borderColor: visData.colors.border.m12,
+                        stack: 'Stack 0',
+                        yAxisID: 'y'
+                    },
+                    {
+                        data: fill1,
+                        labels: visData.y2,
+                        yAxisID: 'y2',
+                        datalabels: {
+                            display: false
+                        }
+                    }
+                ]
+            },
+            options: {
+                aspectRatio: 0.7,
+                scales: {
+                    x: {
+                        ticks: {
+                            callback: function (value, index, ticks) {
+                                return months[index];
+                            }
+                        }
+                    },
+                    y: {
+
+                        position: 'left',
+                        ticks: {
+                            callback: function (value, index, ticks) {
+                                return this.getLabelForValue(value);
+                            },
+                            autoSkip: false
+                        }
+                    },
+                    y2: {
+                        title: {
+                            display: true,
+                            text: sortLabels[sortBy]
+                        },
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false // only want the grid lines for one axis to show up
+                        },
+                        ticks: {
+                            callback: function (value, index, ticks) {
+                                return visData.y2[index];
+                            },
+                            autoSkip: false
+                        }
+                    }
+                },
+                indexAxis: 'y',
+                plugins: {
+                    subtitle: {
+                        display: true,
+                        text: function () {
+                            if (sortBy) {
+                                return `Sorted by ${sortBy}, high to low`;
+                            } else {
+                                return `Sorted by order of response to month0 surveys, most recent to earliest`;
+                            }
+                        }
+                    },
+                    htmlLegend: {
+                        containerID: `legend${config.name}${elem}`,
+                        boxes: colForLegend[config.type]
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            },
+            plugins: [htmlLegendPlugin]
+        });
+    } catch (e) {
+        console.error(e);
+    }
+};

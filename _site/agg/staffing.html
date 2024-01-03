@@ -15,7 +15,7 @@
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="Staffing" />
 <script type="application/ld+json">
-{"@type":"WebPage","headline":"Staffing","url":"http://localhost:4000/agg/staffing.html","description":"Quick visualisation for json gathered for sustainability communities tracker project.","@context":"https://schema.org"}</script>
+{"@type":"WebPage","description":"Quick visualisation for json gathered for sustainability communities tracker project.","headline":"Staffing","url":"http://localhost:4000/agg/staffing.html","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Sustainable communities tracker" /></head>
 <body><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1/dist/chart.umd.js"></script>
@@ -465,6 +465,205 @@ const generateExpChart = function (config, sortBy, elem) {
         console.error(e);
     }
 }
+
+const makeVisDataForCoC = function(data, attr) {
+ // stripe the data, so the chart likes it.
+ let visData = {
+    names: Object.keys(data),
+    m0: [], // data for month 0
+    m12: [], // data for month 12
+    y2: [], // but of course, this is data for
+    // axis y2, not a year 
+    colors: {
+        bg: {
+            m0: [],
+            m12: []
+        },
+        border: {
+            m0: [],
+            m12: []
+        }
+    }
+};
+
+Object.values(data).map(function (row) {
+    let e = row[attr];
+    visData.m0.push(e.m0);
+    visData.m12.push(e.m12);
+    visData.y2.push(e.y2);
+        visData
+            .colors
+            .bg
+            .m0
+            .push(colorForChart(e.m0, true));
+        visData
+            .colors
+            .bg
+            .m12
+            .push(colorForChart(e.m12, true));
+        visData
+            .colors
+            .border
+            .m0
+            .push(colorForChart(e.m0));
+        visData
+            .colors
+            .border
+            .m12
+            .push(colorForChart(e.m12));
+    
+});
+
+    return visData;
+};
+
+const generateCoCChart = function (config, sortBy, elem) {
+    let cocsorted = [];
+    try {
+        contrib_and_coc.map(function (row) {
+            if (row.cocPresent_m0) {
+            let proj = row.ProjectPseudonym.trim();
+            let y2Val = new Date(agesByProjName[proj]).getFullYear();
+            cocsorted[proj] = {
+                coc: {
+                    m0: row.cocPresent_m0, 
+                    m12: row.cocPresent_m12,
+                    y2: y2Val
+                },
+                contrib: {
+                    m0: row.contributingGuidelines_m0,
+                    m12:row.contributingGuidelines_m12,
+                    y2: y2Val
+                }
+            };
+        }
+        });
+
+
+        let visData = makeVisDataForCoC(cocsorted, config.visType);
+
+        let fill = Array(visData.m0.length).fill(1);
+        let fill1 = Array(visData.m0.length).fill(0);
+        // this positions the labels on half-ticks, which looks a lot better.
+        let months = [
+            null,
+            "Month 0",
+            null,
+            "Month 12"
+        ];
+
+        //note that this returns a partially composed function,
+        //NOT a static value.
+        function datalabelsFormatter(dataset) {
+            if (config.datalabels) {
+                return function (value, context) {
+                    if (dataset[context.dataIndex]) {
+                        return dataset[context.dataIndex]
+                    }
+                    return "";
+                }
+            } else {
+                return function () { return "" }; // no label
+            }
+        }
+        let theid = 'chart' + config.name + elem;
+        return new Chart(document.getElementById(theid), {
+            type: 'bar',
+            data: {
+                labels: visData.names,
+                datasets: [
+                    {
+                        data: fill,
+                        backgroundColor: visData.colors.bg.m0,
+                        borderColor: visData.colors.border.m0,
+                        stack: 'Stack 0', datalabels: {
+                            formatter: datalabelsFormatter(visData.m0)
+                        }, yAxisID: 'y'
+                    }, {
+                        data: fill,
+                        datalabels: {
+                            formatter: datalabelsFormatter(visData.m12)
+                        },
+                        backgroundColor: visData.colors.bg.m12,
+                        borderColor: visData.colors.border.m12,
+                        stack: 'Stack 0',
+                        yAxisID: 'y'
+                    },
+                    {
+                        data: fill1,
+                        labels: visData.y2,
+                        yAxisID: 'y2',
+                        datalabels: {
+                            display: false
+                        }
+                    }
+                ]
+            },
+            options: {
+                aspectRatio: 0.7,
+                scales: {
+                    x: {
+                        ticks: {
+                            callback: function (value, index, ticks) {
+                                return months[index];
+                            }
+                        }
+                    },
+                    y: {
+
+                        position: 'left',
+                        ticks: {
+                            callback: function (value, index, ticks) {
+                                return this.getLabelForValue(value);
+                            },
+                            autoSkip: false
+                        }
+                    },
+                    y2: {
+                        title: {
+                            display: true,
+                            text: sortLabels[sortBy]
+                        },
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false // only want the grid lines for one axis to show up
+                        },
+                        ticks: {
+                            callback: function (value, index, ticks) {
+                                return visData.y2[index];
+                            },
+                            autoSkip: false
+                        }
+                    }
+                },
+                indexAxis: 'y',
+                plugins: {
+                    subtitle: {
+                        display: true,
+                        text: function () {
+                            if (sortBy) {
+                                return `Sorted by ${sortBy}, high to low`;
+                            } else {
+                                return `Sorted by order of response to month0 surveys, most recent to earliest`;
+                            }
+                        }
+                    },
+                    htmlLegend: {
+                        containerID: `legend${config.name}${elem}`,
+                        boxes: colForLegend[config.type]
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            },
+            plugins: [htmlLegendPlugin]
+        });
+    } catch (e) {
+        console.error(e);
+    }
+};
+
    //given an id to put it in, generate aggregate summary of a chart. 
 function generateAggTable(config, anchor) {
     let a = document.getElementById(anchor);
@@ -715,7 +914,14 @@ function aggTable(config) {
     return table;
 }
 
+
+   //<!-- CoC Vis -->
+   var contrib_and_coc_byName = {};
+   let contrib_and_coc = [{"ProjectPseudonym":"Project0","cocPresent_m0":null,"cocPresent_m12":null,"contributingGuidelines_m0":null,"contributingGuidelines_m12":null},{"ProjectPseudonym":"Project2","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project10","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project13","cocPresent_m0":".github","cocPresent_m12":".github","contributingGuidelines_m0":"docs","contributingGuidelines_m12":"docs"},{"ProjectPseudonym":"Project14","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project15","cocPresent_m0":"false","cocPresent_m12":"true","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project16","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project18","cocPresent_m0":null,"cocPresent_m12":null,"contributingGuidelines_m0":null,"contributingGuidelines_m12":null},{"ProjectPseudonym":"Project20","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project23","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project28","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project31","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"docs","contributingGuidelines_m12":"docs"},{"ProjectPseudonym":"Project32","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project33","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project34","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project49","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project73","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project76","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project79","cocPresent_m0":"false","cocPresent_m12":"true","contributingGuidelines_m0":"false","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project82","cocPresent_m0":"search","cocPresent_m12":"search","contributingGuidelines_m0":"search","contributingGuidelines_m12":"search"},{"ProjectPseudonym":"Project83","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project85","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project86","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project88","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project92","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"docs","contributingGuidelines_m12":"docs"},{"ProjectPseudonym":"Project95","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project96","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project97","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project98","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project99","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project100","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project106","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project108","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project110","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project111","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project112","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"docs","contributingGuidelines_m12":"docs"},{"ProjectPseudonym":"Project113","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"},{"ProjectPseudonym":"Project114","cocPresent_m0":"false","cocPresent_m12":"false","contributingGuidelines_m0":"false","contributingGuidelines_m12":"false"},{"ProjectPseudonym":"Project132","cocPresent_m0":"true","cocPresent_m12":"true","contributingGuidelines_m0":"true","contributingGuidelines_m12":"true"}];
+   contrib_and_coc.map(function(proj){contrib_and_coc_byName[proj.ProjectPseudonym] = proj});
 </script>
+
+
 <header class="site-header" role="banner">
 
   <div class="wrapper"><a class="site-title" rel="author" href="/">Sustainable communities tracker</a><nav class="site-nav">
@@ -728,7 +934,7 @@ function aggTable(config) {
           </span>
         </label>
 
-        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/agg/age.html">Age</a><a class="page-link" href="/agg/general.html">General info</a><a class="page-link" href="/agg/scale.html">Scale</a><a class="page-link" href="/agg/staffing.html">Staffing</a><a class="page-link" href="/agg/tables.html">Tables</a></div>
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/agg/age.html">Survey by Age</a><a class="page-link" href="/agg/community.html">Community</a><a class="page-link" href="/agg/general.html">General info</a><a class="page-link" href="/agg/scale.html">Survey by Scale</a><a class="page-link" href="/agg/staffing.html">Staffing</a><a class="page-link" href="/agg/tables.html">Tables</a></div>
       </nav></div>
 </header>
 <main class="page-content" aria-label="Content">

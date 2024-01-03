@@ -3,19 +3,19 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
-<title>Tables | Sustainable communities tracker</title>
+<title>Community | Sustainable communities tracker</title>
 <meta name="generator" content="Jekyll v4.3.2" />
-<meta property="og:title" content="Tables" />
+<meta property="og:title" content="Community" />
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Quick visualisation for json gathered for sustainability communities tracker project." />
 <meta property="og:description" content="Quick visualisation for json gathered for sustainability communities tracker project." />
-<link rel="canonical" href="http://localhost:4000/agg/tables.html" />
-<meta property="og:url" content="http://localhost:4000/agg/tables.html" />
+<link rel="canonical" href="http://localhost:4000/agg/community.html" />
+<meta property="og:url" content="http://localhost:4000/agg/community.html" />
 <meta property="og:site_name" content="Sustainable communities tracker" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Tables" />
+<meta property="twitter:title" content="Community" />
 <script type="application/ld+json">
-{"@type":"WebPage","description":"Quick visualisation for json gathered for sustainability communities tracker project.","headline":"Tables","url":"http://localhost:4000/agg/tables.html","@context":"https://schema.org"}</script>
+{"@type":"WebPage","description":"Quick visualisation for json gathered for sustainability communities tracker project.","headline":"Community","url":"http://localhost:4000/agg/community.html","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Sustainable communities tracker" /></head>
 <body><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1/dist/chart.umd.js"></script>
@@ -940,22 +940,29 @@ function aggTable(config) {
 <main class="page-content" aria-label="Content">
     <div class="wrapper">
 
-      <h1>Tables</h1>
+      <h1>Community</h1>
 
-      Aggregate survey data in table format
+      <h2>Code of Conduct and Community contributing guidelines</h2>
 
-<div id="aggregateAnchor"></div>
+
+<div id="communityGraph"></div>
 
 <script>
-
-    graphs.map(function (config) {
-        generateAggTable(config, "aggregateAnchor");
-    });
-    mcGraphs.map(function (config) {
-        generateAggTable(config, "aggregateAnchor");
-    });
+    let config = {
+        coc :{title: "CoC Present?", name:"CoCChart", visType : "coc", type :"category"},
+        contrib: {title: "Contributing guidelines?", name:"contribChart", visType : "contrib", type :"category"}
+    }
+    
+    generateElem(config.coc, "communityGraph", true);
+    generateCoCChart(config.coc, "age", "communityGraph");
+    generateElem(config.contrib, "communityGraph", true);
+    generateCoCChart(config.contrib, "age", "communityGraph");
 
 </script>
+
+
+
+
 
     </div>
 

@@ -1,0 +1,25 @@
+---
+title: Community
+layout: aggregate
+---
+
+<h2>Code of Conduct and Community contributing guidelines</h2>
+
+
+<div id="communityGraph"></div>
+
+<script>
+    let config = {
+        coc :{title: "CoC Present?", name:"CoCChart", visType : "coc", type :"category"},
+        contrib: {title: "Contributing guidelines?", name:"contribChart", visType : "contrib", type :"category"}
+    }
+    
+    generateElem(config.coc, "communityGraph", true);
+    generateCoCChart(config.coc, "age", "communityGraph");
+    generateElem(config.contrib, "communityGraph", true);
+    generateCoCChart(config.contrib, "age", "communityGraph");
+
+</script>
+
+
+

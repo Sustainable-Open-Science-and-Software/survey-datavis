@@ -63,4 +63,11 @@
 <script>
    {% include js/aggCharts.js %}
    {% include js/aggTable.js %}
+
+   //<!-- CoC Vis -->
+   var contrib_and_coc_byName = {};
+   let contrib_and_coc = {{site.data.All_months_community | jsonify}};
+   contrib_and_coc.map(function(proj){contrib_and_coc_byName[proj.ProjectPseudonym] = proj});
 </script>
+
+
