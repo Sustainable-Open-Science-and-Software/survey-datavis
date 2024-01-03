@@ -469,7 +469,7 @@ const generateExpChart = function (config, sortBy, elem) {
 const makeVisDataForCoC = function(data, attr) {
  // stripe the data, so the chart likes it.
  let visData = {
-    names: Object.keys(data),
+    names: data.map(a => a.ProjectPseudonym), //otherwise, label is an index
     m0: [], // data for month 0
     m12: [], // data for month 12
     y2: [], // but of course, this is data for
@@ -524,21 +524,25 @@ const generateCoCChart = function (config, sortBy, elem) {
             if (row.cocPresent_m0) {
             let proj = row.ProjectPseudonym.trim();
             let y2Val = new Date(agesByProjName[proj]).getFullYear();
-            cocsorted[proj] = {
+            cocsorted.push({
+                ProjectPseudonym : proj,
                 coc: {
+                    ProjectPseudonym : proj,
                     m0: row.cocPresent_m0, 
                     m12: row.cocPresent_m12,
                     y2: y2Val
                 },
                 contrib: {
+                    ProjectPseudonym : proj,
                     m0: row.contributingGuidelines_m0,
                     m12:row.contributingGuidelines_m12,
                     y2: y2Val
                 }
-            };
+            });
         }
         });
 
+        cocsorted.sort(sorts.age);
 
         let visData = makeVisDataForCoC(cocsorted, config.visType);
 
@@ -555,6 +559,7 @@ const generateCoCChart = function (config, sortBy, elem) {
         //note that this returns a partially composed function,
         //NOT a static value.
         function datalabelsFormatter(dataset) {
+
             if (config.datalabels) {
                 return function (value, context) {
                     if (dataset[context.dataIndex]) {
