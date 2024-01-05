@@ -1162,10 +1162,8 @@ function aggTable(config) {
 
     //this data is more deeply nested, need to override default sort
     data.sort(function (a, b) {
-      if (a && b && a[attr].m0 && b[attr].m0) {
-        let aDeep = a[attr].m0[meanOrMedian].ms,
-          bDeep = b[attr].m0[meanOrMedian].ms;
-        return sorts.answerScale(aDeep, bDeep);
+      if (a && b) {
+        return sorts.answerScale(a.y2, b.y2);
       } else if (a) {
         return -1;
       } else if (b) {
