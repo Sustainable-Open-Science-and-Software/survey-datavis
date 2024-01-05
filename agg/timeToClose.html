@@ -10,6 +10,15 @@ Aggregate survey data in table format
 <script>
   const stripeTTCData = function (data, attr, meanOrMedian) {
 
+    //can't sort by age without a year... 
+    data = data.map(function(elem){
+      let y2 = agesByProjName[elem.name];
+      y2 = new Date(y2).getFullYear();
+      elem.y2 = y2;
+      return elem;
+    });
+
+
     //this data is more deeply nested, need to override default sort
     data.sort(function (a, b) {
       if (a && b && a[attr].m0 && b[attr].m0) {
@@ -50,20 +59,23 @@ Aggregate survey data in table format
 
 
     Object.values(data).map(function (row) {
+      if (row.name) {
+        let e = row[attr], m0, m6, m12;
 
-      let e = row[attr], m0, m6, m12;
-      console.log(e);
-      if (e.m0) { m0 = e.m0[meanOrMedian].ms };
-      if (e.m6) { m6 = e.m6[meanOrMedian].ms };
-      if (e.m12) { m12 = e.m12[meanOrMedian].ms };
+        if (e.m0) { m0 = e.m0[meanOrMedian].ms };
+        if (e.m6) { m6 = e.m6[meanOrMedian].ms };
+        if (e.m12) { m12 = e.m12[meanOrMedian].ms };
 
-      visData.m0.push(m0);
-      visData.m6.push(m6);
-      visData.m12.push(m12);
+        if (m0 || m12 || m6) { // omit dud rows
 
-      console.log("😇", m0, m12, m6);
-
-      visData.y2.push(e.y2);
+          visData.m0.push(m0);
+          visData.m6.push(m6);
+          visData.m12.push(m12);
+          visData.y2.push(row.y2);
+        } else {
+          console.warn(`${row.name} is an empty row: `, row)
+        }
+      }
     });
     return visData;
 
@@ -71,7 +83,7 @@ Aggregate survey data in table format
 
   const generateTTCChart = function (config, sortBy, elem) {
     try {
-      let visData = stripeTTCData(aggTTC, "issue", "mean");
+      let visData = stripeTTCData(aggTTC, "issue", config.type);
       //we need to define colour strengths for the colours, so let's use 
       //minmax to find the highest and lowest values: 
       let allVals = visData.m0.concat(visData.m6, visData.m12);
@@ -239,15 +251,33 @@ Aggregate survey data in table format
     }
   }
 
-  let config = {
-    title: "Time to Close Issue",
-    name: "ttcIssue",
-    type: "scale"
-  }
+  let ttcConfig = [
+    {
+      name: "ttcIssue",
+      type: "mean", 
+      issueOrPr : "issue"
+    },
+    {
+      name: "ttcIssueMed",
+      type: "median", 
+      issueOrPr : "issue"
+    },
+    {
+      name: "ttcPR",
+      type: "mean", 
+      issueOrPr : "pr"
+    },
+    {
+      name: "ttcPRMed",
+      type: "median", 
+      issueOrPr : "pr"
+    }
+  ]
 
-
-  generateElem(config, "aggregateAnchor", true)
-  generateTTCChart(config, "age", "aggregateAnchor");
-
+  ttcConfig.map(function (config) {
+    config.title = `Time to close ${config.issueOrPr} (${config.type})`;
+    generateElem(config, "aggregateAnchor", true);
+    generateTTCChart(config, "age", "aggregateAnchor");
+  });
 
 </script>
