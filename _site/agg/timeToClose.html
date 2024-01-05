@@ -3,19 +3,19 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
-<title>Tables | Sustainable communities tracker</title>
+<title>TimeToClose | Sustainable communities tracker</title>
 <meta name="generator" content="Jekyll v4.3.2" />
-<meta property="og:title" content="Tables" />
+<meta property="og:title" content="TimeToClose" />
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Quick visualisation for json gathered for sustainability communities tracker project." />
 <meta property="og:description" content="Quick visualisation for json gathered for sustainability communities tracker project." />
-<link rel="canonical" href="http://localhost:4000/agg/tables.html" />
-<meta property="og:url" content="http://localhost:4000/agg/tables.html" />
+<link rel="canonical" href="http://localhost:4000/agg/timeToClose.html" />
+<meta property="og:url" content="http://localhost:4000/agg/timeToClose.html" />
 <meta property="og:site_name" content="Sustainable communities tracker" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Tables" />
+<meta property="twitter:title" content="TimeToClose" />
 <script type="application/ld+json">
-{"@type":"WebPage","description":"Quick visualisation for json gathered for sustainability communities tracker project.","headline":"Tables","url":"http://localhost:4000/agg/tables.html","@context":"https://schema.org"}</script>
+{"@type":"WebPage","description":"Quick visualisation for json gathered for sustainability communities tracker project.","headline":"TimeToClose","url":"http://localhost:4000/agg/timeToClose.html","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Sustainable communities tracker" /></head>
 <body><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1/dist/chart.umd.js"></script>
@@ -1143,20 +1143,254 @@ function aggTable(config) {
 <main class="page-content" aria-label="Content">
     <div class="wrapper">
 
-      <h1>Tables</h1>
+      <h1>TimeToClose</h1>
 
       Aggregate survey data in table format
 
 <div id="aggregateAnchor"></div>
 
 <script>
+  const stripeTTCData = function (data, attr, meanOrMedian) {
 
-    graphs.map(function (config) {
-        generateAggTable(config, "aggregateAnchor");
+    //this data is more deeply nested, need to override default sort
+    data.sort(function (a, b) {
+      if (a && b && a[attr].m0 && b[attr].m0) {
+        let aDeep = a[attr].m0[meanOrMedian].ms,
+          bDeep = b[attr].m0[meanOrMedian].ms;
+        return sorts.answerScale(aDeep, bDeep);
+      } else if (a) {
+        return -1;
+      } else if (b) {
+        return 1;
+      } else {
+        return 0;
+      }
     });
-    mcGraphs.map(function (config) {
-        generateAggTable(config, "aggregateAnchor");
+
+    // stripe the data, so the chart likes it.
+    let visData = {
+      names: data.map(a => a.name), //otherwise, label is an index
+      m0: [], // data for month 0
+      m6: [], // data for month 0
+      m12: [], // data for month 12
+      y2: [], // but of course, this is data for
+      // axis y2, not a year 
+      colors: {
+        bg: {
+          m0: [],
+          m6: [],
+          m12: []
+        },
+        border: {
+          m0: [],
+          m6: [],
+          m12: []
+        }
+      }
+    };
+
+
+
+    Object.values(data).map(function (row) {
+
+      let e = row[attr], m0, m6, m12;
+      console.log(e);
+      if (e.m0) { m0 = e.m0[meanOrMedian].ms };
+      if (e.m6) { m6 = e.m6[meanOrMedian].ms };
+      if (e.m12) { m12 = e.m12[meanOrMedian].ms };
+
+      visData.m0.push(m0);
+      visData.m6.push(m6);
+      visData.m12.push(m12);
+
+      console.log("😇", m0, m12, m6);
+
+      visData.y2.push(e.y2);
     });
+    return visData;
+
+  }
+
+  const generateTTCChart = function (config, sortBy, elem) {
+    try {
+      let visData = stripeTTCData(aggTTC, "issue", "mean");
+      //we need to define colour strengths for the colours, so let's use 
+      //minmax to find the highest and lowest values: 
+      let allVals = visData.m0.concat(visData.m6, visData.m12);
+      let minMax = getMinMaxNums(allVals);
+
+      let fill = Array(visData.m0.length).fill(1);
+      let fill1 = Array(visData.m0.length).fill(0);
+      // this positions the labels on half-ticks, which looks a lot better.
+      let months = [
+        null,
+        "Month 0",
+        null,
+        "Month 6",
+        null,
+        "Month 12"
+      ];
+
+      //note that this returns a partially composed function,
+      //NOT a static value.
+      function datalabelsNumFormatter(dataset) {
+        if (config.datalabels) {
+          return function (value, context) {
+            let val = dataset[context.dataIndex];
+            if (val) {
+              //this is complicated
+              //a long string that starts with a number will
+              //parse into a number! and I want to truncate 
+              // long strings, but not truncate numbers.
+              //luckly, NONE of our genuine numeric values 
+              //are longer than 6 chars (any OSS project 
+              //would be delighted to have that many staff!) 
+              //so truncating everything, regardless of type
+              //will still only trucate the strings.
+              if (val.length > 6) {
+                return val.slice(0, 6) + "...";
+              } else {
+                return val;
+              }
+
+
+            }
+            return "";
+          }
+        } else {
+          return function () { return "" }; // no label
+        }
+      }
+      bgFormatter = function (minMax, dataset, border) {
+        return function (value, context) {
+          let val = dataset[value.dataIndex]
+          val = parseFloat(val);
+          if (!val) {
+            //it's a string! but we still need to be able to read it.
+            // so we'll make it a white (0% opaque) background.
+            val = 0;
+          }
+          let opacity = val / minMax.max;
+          if (border) {
+            opacity = opacity + 0.1;
+            if (opacity > 1) { opacity = 1; }
+          }
+          return `rgba(54,162,235,${opacity})`;
+        }
+      };
+
+      let theId = generateId('chart', config.name, elem);
+      return new Chart(document.getElementById(theId), {
+        type: 'bar',
+        data: {
+          labels: visData.names,
+          datasets: [
+            {
+              data: fill,
+              backgroundColor: bgFormatter(minMax, visData.m0),
+              borderColor: bgFormatter(minMax, visData.m0, true),
+              stack: 'Stack 0', datalabels: {
+                formatter: datalabelsNumFormatter(visData.m0)
+              }, yAxisID: 'y'
+            }, {
+              data: fill,
+              backgroundColor: bgFormatter(minMax, visData.m6),
+              borderColor: bgFormatter(minMax, visData.m6, true),
+              stack: 'Stack 0',
+              datalabels: {
+                formatter: datalabelsNumFormatter(visData.m6)
+              }, yAxisID: 'y'
+            }, {
+              data: fill,
+              datalabels: {
+                formatter: datalabelsNumFormatter(visData.m12)
+              },
+              backgroundColor: bgFormatter(minMax, visData.m12),
+              borderColor: bgFormatter(minMax, visData.m12, true),
+              stack: 'Stack 0',
+              yAxisID: 'y'
+            },
+            {
+              data: fill1,
+              labels: visData.y2,
+              yAxisID: 'y2',
+              datalabels: {
+                display: false
+              }
+            }
+          ]
+        },
+        options: {
+          aspectRatio: 0.7,
+          scales: {
+            x: {
+              ticks: {
+                callback: function (value, index, ticks) {
+                  return months[index];
+                }
+              }
+            },
+            y: {
+
+              position: 'left',
+              ticks: {
+                callback: function (value, index, ticks) {
+                  return this.getLabelForValue(value);
+                },
+                autoSkip: false
+              }
+            },
+            y2: {
+              title: {
+                display: true,
+                text: sortLabels[sortBy]
+              },
+              position: 'right',
+              grid: {
+                drawOnChartArea: false // only want the grid lines for one axis to show up
+              },
+              ticks: {
+                callback: function (value, index, ticks) {
+                  return visData.y2[index];
+                },
+                autoSkip: false
+              }
+            }
+          },
+          indexAxis: 'y',
+          plugins: {
+            subtitle: {
+              display: true,
+              text: function () {
+                if (sortBy) {
+                  return `Sorted by ${sortBy}, high to low`;
+                } else {
+                  return `Sorted by order of response to month0 surveys, most recent to earliest`;
+                }
+              }
+            },
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  let config = {
+    title: "Time to Close Issue",
+    name: "ttcIssue",
+    type: "scale"
+  }
+
+
+  generateElem(config, "aggregateAnchor", true)
+  generateTTCChart(config, "age", "aggregateAnchor");
+
 
 </script>
 
