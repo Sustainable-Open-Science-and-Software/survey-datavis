@@ -1176,7 +1176,7 @@ function aggTable(config) {
 
     // stripe the data, so the chart likes it.
     let visData = {
-      names: data.map(a => a.name), //otherwise, label is an index
+      names: [],
       m0: [], // data for month 0
       m6: [], // data for month 0
       m12: [], // data for month 12
@@ -1208,6 +1208,7 @@ function aggTable(config) {
 
         if (m0 || m12 || m6) { // omit dud rows
 
+          visData.names.push(row.name);
           visData.m0.push(m0);
           visData.m6.push(m6);
           visData.m12.push(m12);
