@@ -17,8 +17,8 @@ $color-faded-grey: rgba(201, 203, 207, 0.2);
 
 $text-color: rgba(0, 0, 0, 0.76);
 $main-bg-color: #f4f4f9;
-$highlight-color:#00BCD4;
-$contrast-color:#f2ae0f;
+$highlight-color: #00BCD4;
+$contrast-color: #f2ae0f;
 
 $color-ongoing: $color-faded-blue;
 $color-declined: $color-faded-red;
@@ -104,8 +104,14 @@ h1 {
     margin-left: -0.75em;
     margin-right: -0.75em;
   }
-  table td {text-align: center;}
-  tbody tr:nth-child(1) {font-style: italic;}
+
+  table td {
+    text-align: center;
+  }
+
+  tbody tr:nth-child(1) {
+    font-style: italic;
+  }
 }
 
 .column {
@@ -292,22 +298,22 @@ table.status {
   ul {
     display: flex;
     flex-direction: row;
-    list-style-type:none;
-    align-items:flex-start;
-    flex-grow:1;
+    list-style-type: none;
+    align-items: flex-start;
+    flex-grow: 1;
     justify-content: flex-start;
     flex-wrap: wrap;
-    border:solid $color-solid-grey 1px;
+    border: solid $color-solid-grey 1px;
     border-radius: 8px;
-    padding:0.4em;
+    padding: 0.4em;
   }
 
   li {
     display: flex;
     flex-direction: row;
-    align-items:center;
-    margin-left:10px;
-    flex-grow:1;
+    align-items: center;
+    margin-left: 10px;
+    flex-grow: 1;
   }
 
   .box {
@@ -318,10 +324,25 @@ table.status {
     width: 20px;
   }
 
+  .legendScale {
+    display: flex;
+    width: 100%
+  }
+
+  .boxwide {
+    border-width: 1px;
+    border-style: solid;
+    background: linear-gradient(90deg, #fff 0%, $color-solid-blue 100%);
+    height: 20px;
+    margin: 2px 4px;
+    flex-grow: 1
+  }
+
   p {
     margin: 0;
     padding: 0;
-    &::first-letter{
+
+    &::first-letter {
       text-transform: capitalize;
     }
   }
@@ -358,7 +379,7 @@ table.status {
 
   h1 {
     margin-left: 0;
-  } 
+  }
 
   table td {
     padding: 2px;

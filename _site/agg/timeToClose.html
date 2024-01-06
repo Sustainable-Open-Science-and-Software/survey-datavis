@@ -184,6 +184,7 @@ const htmlLegendPlugin = {
     afterUpdate(chart, args, options) {
         const ul = getOrCreateLegendList(chart, options.containerID);
         const boxes = options.boxes;
+        console.log("hello");
 
         // Remove old legend items
         while (ul.firstChild) {
@@ -1152,7 +1153,7 @@ function aggTable(config) {
   const stripeTTCData = function (data, attr, meanOrMedian) {
 
     //can't sort by age without a year... 
-    data = data.map(function(elem){
+    data = data.map(function (elem) {
       let y2 = agesByProjName[elem.name];
       y2 = new Date(y2).getFullYear();
       elem.y2 = y2;
@@ -1212,13 +1213,76 @@ function aggTable(config) {
           visData.m12.push(m12);
           visData.y2.push(row.y2);
         } else {
-          console.warn(`${row.name} is an empty row: `, row)
+          console.debug(`${row.name} is an empty row: `, row)
         }
       }
     });
     return visData;
 
   }
+
+  const gradientLegendPlugin = {
+    id: 'gradientLegend',
+    afterUpdate(chart, args, options) {
+      const legendScale = getOrCreateLegendList(chart, options.containerID);
+      const stops = options.minMax;
+
+      // TODO, make a gradient from high to low, 
+      // probably need to delete some of the stuff below
+      // use the maxmin to make end stops for gradient.
+      //it's in the var stops above.
+
+      // Color box
+      const legendScaleBox = document.createElement('div');
+      legendScaleBox.classList = "legendScale";
+      const boxSpan = document.createElement('div');
+      boxSpan.classList = "boxwide";
+
+      // Remove old legend items
+      legendScale.replaceWith(legendScaleBox);
+
+      let lo = options.minMax.min;
+      let hi = options.minMax.max;
+
+      const convertToHumanMax = function (durInMs) {
+        let duration = dur.fromMillis(durInMs),
+          mins = duration.shiftTo("minutes"),
+          hours = duration.shiftTo("hours"),
+          days = duration.shiftTo("days"),
+          weeks = duration.shiftTo("weeks"),
+          months = duration.shiftTo("months");
+
+        let durationForHumans = mins;
+        if (mins.values.minutes > 99) {
+          durationForHumans = hours;
+          if (hours.values.hours > 99) {
+            //show as days if time is 100+ hours
+            durationForHumans = days;
+            if (days.values.days > 14) {
+              //show as weeks if time is 2+ weeks
+              durationForHumans = weeks;
+              if (days.values.weeks > 48) {
+                //show as months if time is 4+ weeks
+                durationForHumans = months;
+              }
+            }
+          }
+        }
+        return durationForHumans.toHuman();
+      }
+
+      lo = convertToHumanMax(lo);
+      hi = convertToHumanMax(hi);
+
+      const lowScale = document.createTextNode(lo);
+      const highScale = document.createTextNode(hi);
+      legendScaleBox.appendChild(lowScale);
+      legendScaleBox.appendChild(boxSpan);
+      legendScaleBox.appendChild(highScale);
+
+    }
+  }
+
 
   const generateTTCChart = function (config, sortBy, elem) {
     try {
@@ -1380,9 +1444,14 @@ function aggTable(config) {
             },
             legend: {
               display: false
+            },
+            gradientLegend: {
+              containerID: `legend${config.name}${elem}`,
+              minMax: minMax
             }
           }
-        }
+        },
+        plugins: [gradientLegendPlugin]
       });
 
     } catch (e) {
@@ -1393,23 +1462,23 @@ function aggTable(config) {
   let ttcConfig = [
     {
       name: "ttcIssue",
-      type: "mean", 
-      issueOrPr : "issue"
+      type: "mean",
+      issueOrPr: "issue"
     },
     {
       name: "ttcIssueMed",
-      type: "median", 
-      issueOrPr : "issue"
+      type: "median",
+      issueOrPr: "issue"
     },
     {
       name: "ttcPR",
-      type: "mean", 
-      issueOrPr : "pr"
+      type: "mean",
+      issueOrPr: "pr"
     },
     {
       name: "ttcPRMed",
-      type: "median", 
-      issueOrPr : "pr"
+      type: "median",
+      issueOrPr: "pr"
     }
   ]
 
