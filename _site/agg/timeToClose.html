@@ -1150,6 +1150,35 @@ function aggTable(config) {
 <div id="aggregateAnchor"></div>
 
 <script>
+  //reading "1232334 milliseconds" is rubbish.
+  const convertToHumanMax = function (durInMs) {
+    let duration = dur.fromMillis(durInMs),
+      mins = duration.shiftTo("minutes"),
+      hours = duration.shiftTo("hours"),
+      days = duration.shiftTo("days"),
+      weeks = duration.shiftTo("weeks"),
+      months = duration.shiftTo("months");
+
+    let durationForHumans = mins;
+    if (mins.values.minutes > 99) {
+      durationForHumans = hours;
+      if (hours.values.hours > 99) {
+        //show as days if time is 100+ hours
+        durationForHumans = days;
+        if (days.values.days > 14) {
+          //show as weeks if time is 2+ weeks
+          durationForHumans = weeks;
+          if (days.values.weeks > 48) {
+            //show as months if time is 4+ weeks
+            durationForHumans = months;
+          }
+        }
+      }
+    }
+    return durationForHumans.toHuman({ unitDisplay: "short" });
+  }
+
+
   const stripeTTCData = function (data, attr, meanOrMedian) {
 
     //can't sort by age without a year... 
@@ -1226,14 +1255,10 @@ function aggTable(config) {
     id: 'gradientLegend',
     afterUpdate(chart, args, options) {
       const legendScale = getOrCreateLegendList(chart, options.containerID);
-      const stops = options.minMax;
+      //this const is just sugar for a LONG-ass var.
+      const config = options.config;
 
-      // TODO, make a gradient from high to low, 
-      // probably need to delete some of the stuff below
-      // use the maxmin to make end stops for gradient.
-      //it's in the var stops above.
-
-      // Color box
+      // Color box - colouring is done via css boxwide class
       const legendScaleBox = document.createElement('div');
       legendScaleBox.classList = "legendScale";
       const boxSpan = document.createElement('div');
@@ -1245,33 +1270,6 @@ function aggTable(config) {
       let lo = options.minMax.min;
       let hi = options.minMax.max;
 
-      const convertToHumanMax = function (durInMs) {
-        let duration = dur.fromMillis(durInMs),
-          mins = duration.shiftTo("minutes"),
-          hours = duration.shiftTo("hours"),
-          days = duration.shiftTo("days"),
-          weeks = duration.shiftTo("weeks"),
-          months = duration.shiftTo("months");
-
-        let durationForHumans = mins;
-        if (mins.values.minutes > 99) {
-          durationForHumans = hours;
-          if (hours.values.hours > 99) {
-            //show as days if time is 100+ hours
-            durationForHumans = days;
-            if (days.values.days > 14) {
-              //show as weeks if time is 2+ weeks
-              durationForHumans = weeks;
-              if (days.values.weeks > 48) {
-                //show as months if time is 4+ weeks
-                durationForHumans = months;
-              }
-            }
-          }
-        }
-        return durationForHumans.toHuman();
-      }
-
       lo = convertToHumanMax(lo);
       hi = convertToHumanMax(hi);
 
@@ -1281,6 +1279,8 @@ function aggTable(config) {
       legendScaleBox.appendChild(boxSpan);
       legendScaleBox.appendChild(highScale);
 
+      let legendTxt = `${config.type} time to resolve ${config.issueOrPr}:`
+      document.getElementById(options.containerID).before(legendTxt);
     }
   }
 
@@ -1311,25 +1311,12 @@ function aggTable(config) {
         if (config.datalabels) {
           return function (value, context) {
             let val = dataset[context.dataIndex];
+
+            //handle nulls
             if (val) {
-              //this is complicated
-              //a long string that starts with a number will
-              //parse into a number! and I want to truncate 
-              // long strings, but not truncate numbers.
-              //luckly, NONE of our genuine numeric values 
-              //are longer than 6 chars (any OSS project 
-              //would be delighted to have that many staff!) 
-              //so truncating everything, regardless of type
-              //will still only trucate the strings.
-              if (val.length > 6) {
-                return val.slice(0, 6) + "...";
-              } else {
-                return val;
-              }
-
-
-            }
-            return "";
+              val = convertToHumanMax(val);
+            } else { val = ""; }
+            return val;
           }
         } else {
           return function () { return "" }; // no label
@@ -1448,7 +1435,8 @@ function aggTable(config) {
             },
             gradientLegend: {
               containerID: `legend${config.name}${elem}`,
-              minMax: minMax
+              minMax: minMax,
+              config: config
             }
           }
         },
@@ -1464,22 +1452,26 @@ function aggTable(config) {
     {
       name: "ttcIssue",
       type: "mean",
-      issueOrPr: "issue"
+      issueOrPr: "issue",
+      datalabels: true
     },
     {
       name: "ttcIssueMed",
       type: "median",
-      issueOrPr: "issue"
+      issueOrPr: "issue",
+      datalabels: true
     },
     {
       name: "ttcPR",
       type: "mean",
-      issueOrPr: "pr"
+      issueOrPr: "pr",
+      datalabels: true
     },
     {
       name: "ttcPRMed",
       type: "median",
-      issueOrPr: "pr"
+      issueOrPr: "pr",
+      datalabels: true
     }
   ]
 
