@@ -1,0 +1,3 @@
+# survey-datavis
+
+This repo is a subset of [https://github.com/Sustainable-Open-Science-and-Software/sustainable-communities-tracker](https://github.com/Sustainable-Open-Science-and-Software/sustainable-communities-tracker), using only public data. Please see [https://github.com/Sustainable-Open-Science-and-Software/sustainable-communities-tracker](https://github.com/Sustainable-Open-Science-and-Software/sustainable-communities-tracker) for the primary, well-documented codebase, and see [the study homepage](https://sustainable-open-science-and-software.github.io/) for more info about the study and publications. 

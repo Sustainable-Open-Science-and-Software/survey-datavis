@@ -1,0 +1,342 @@
+---
+title: TimeToClose
+layout: aggregate
+---
+
+Aggregate survey data in table format
+
+<div id="aggregateAnchor"></div>
+
+<script>
+  //reading "1232334 milliseconds" is rubbish.
+  const convertToHumanMax = function (durInMs) {
+    let duration = dur.fromMillis(durInMs),
+      mins = duration.shiftTo("minutes"),
+      hours = duration.shiftTo("hours"),
+      days = duration.shiftTo("days"),
+      weeks = duration.shiftTo("weeks"),
+      months = duration.shiftTo("months");
+
+    let durationForHumans = mins;
+    if (mins.values.minutes > 99) {
+      durationForHumans = hours;
+      if (hours.values.hours > 99) {
+        //show as days if time is 100+ hours
+        durationForHumans = days;
+        if (days.values.days > 14) {
+          //show as weeks if time is 2+ weeks
+          durationForHumans = weeks;
+          if (days.values.weeks > 48) {
+            //show as months if time is 4+ weeks
+            durationForHumans = months;
+          }
+        }
+      }
+    }
+    return durationForHumans.toHuman({ unitDisplay: "short" });
+  }
+
+
+  const stripeTTCData = function (data, attr, meanOrMedian) {
+
+    //can't sort by age without a year... 
+    data = data.map(function (elem) {
+      let y2 = agesByProjName[elem.name];
+      y2 = new Date(y2).getFullYear();
+      elem.y2 = y2;
+      return elem;
+    });
+
+
+    //this data is more deeply nested, need to override default sort
+    data.sort(function (a, b) {
+      if (a && b) {
+        return sorts.answerScale(a.y2, b.y2);
+      } else if (a) {
+        return -1;
+      } else if (b) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
+
+    // stripe the data, so the chart likes it.
+    let visData = {
+      names: [],
+      m0: [], // data for month 0
+      m6: [], // data for month 0
+      m12: [], // data for month 12
+      y2: [], // but of course, this is data for
+      // axis y2, not a year 
+      colors: {
+        bg: {
+          m0: [],
+          m6: [],
+          m12: []
+        },
+        border: {
+          m0: [],
+          m6: [],
+          m12: []
+        }
+      }
+    };
+
+
+
+    Object.values(data).map(function (row) {
+      if (row.name) {
+        let e = row[attr], m0, m6, m12;
+
+        if (e.m0) { m0 = e.m0[meanOrMedian].ms };
+        if (e.m6) { m6 = e.m6[meanOrMedian].ms };
+        if (e.m12) { m12 = e.m12[meanOrMedian].ms };
+
+        if (m0 || m12 || m6) { // omit dud rows
+
+          visData.names.push(row.name);
+          visData.m0.push(m0);
+          visData.m6.push(m6);
+          visData.m12.push(m12);
+          visData.y2.push(row.y2);
+        } else {
+          console.debug(`${row.name} is an empty row: `, row)
+        }
+      }
+    });
+    return visData;
+
+  }
+
+  const gradientLegendPlugin = {
+    id: 'gradientLegend',
+    afterUpdate(chart, args, options) {
+      const legendScale = getOrCreateLegendList(chart, options.containerID);
+      //this const is just sugar for a LONG-ass var.
+      const config = options.config;
+
+      // Color box - colouring is done via css boxwide class
+      const legendScaleBox = document.createElement('div');
+      legendScaleBox.classList = "legendScale";
+      const boxSpan = document.createElement('div');
+      boxSpan.classList = "boxwide";
+
+      // Remove old legend items
+      legendScale.replaceWith(legendScaleBox);
+
+      let lo = options.minMax.min;
+      let hi = options.minMax.max;
+
+      lo = convertToHumanMax(lo);
+      hi = convertToHumanMax(hi);
+
+      const lowScale = document.createTextNode(lo);
+      const highScale = document.createTextNode(hi);
+      legendScaleBox.appendChild(lowScale);
+      legendScaleBox.appendChild(boxSpan);
+      legendScaleBox.appendChild(highScale);
+
+      let legendTxt = `${config.type} time to resolve ${config.issueOrPr}:`
+      document.getElementById(options.containerID).before(legendTxt);
+    }
+  }
+
+
+  const generateTTCChart = function (config, sortBy, elem) {
+    try {
+      let visData = stripeTTCData(aggTTC, "issue", config.type);
+      //we need to define colour strengths for the colours, so let's use 
+      //minmax to find the highest and lowest values: 
+      let allVals = visData.m0.concat(visData.m6, visData.m12);
+      let minMax = getMinMaxNums(allVals);
+
+      let fill = Array(visData.m0.length).fill(1);
+      let fill1 = Array(visData.m0.length).fill(0);
+      // this positions the labels on half-ticks, which looks a lot better.
+      let months = [
+        null,
+        "Month 0",
+        null,
+        "Month 6",
+        null,
+        "Month 12"
+      ];
+
+      //note that this returns a partially composed function,
+      //NOT a static value.
+      function datalabelsNumFormatter(dataset) {
+        if (config.datalabels) {
+          return function (value, context) {
+            let val = dataset[context.dataIndex];
+
+            //handle nulls
+            if (val) {
+              val = convertToHumanMax(val);
+            } else { val = ""; }
+            return val;
+          }
+        } else {
+          return function () { return "" }; // no label
+        }
+      }
+      bgFormatter = function (minMax, dataset, border) {
+        return function (value, context) {
+          let val = dataset[value.dataIndex]
+          val = parseFloat(val);
+          if (!val) {
+            //it's a string! but we still need to be able to read it.
+            // so we'll make it a white (0% opaque) background.
+            val = 0;
+          }
+          let opacity = val / minMax.max;
+          if (border) {
+            opacity = opacity + 0.1;
+            if (opacity > 1) { opacity = 1; }
+          }
+          return `rgba(54,162,235,${opacity})`;
+        }
+      };
+
+      let theId = generateId('chart', config.name, elem);
+      return new Chart(document.getElementById(theId), {
+        type: 'bar',
+        data: {
+          labels: visData.names,
+          datasets: [
+            {
+              data: fill,
+              backgroundColor: bgFormatter(minMax, visData.m0),
+              borderColor: bgFormatter(minMax, visData.m0, true),
+              stack: 'Stack 0', datalabels: {
+                formatter: datalabelsNumFormatter(visData.m0)
+              }, yAxisID: 'y'
+            }, {
+              data: fill,
+              backgroundColor: bgFormatter(minMax, visData.m6),
+              borderColor: bgFormatter(minMax, visData.m6, true),
+              stack: 'Stack 0',
+              datalabels: {
+                formatter: datalabelsNumFormatter(visData.m6)
+              }, yAxisID: 'y'
+            }, {
+              data: fill,
+              datalabels: {
+                formatter: datalabelsNumFormatter(visData.m12)
+              },
+              backgroundColor: bgFormatter(minMax, visData.m12),
+              borderColor: bgFormatter(minMax, visData.m12, true),
+              stack: 'Stack 0',
+              yAxisID: 'y'
+            },
+            {
+              data: fill1,
+              labels: visData.y2,
+              yAxisID: 'y2',
+              datalabels: {
+                display: false
+              }
+            }
+          ]
+        },
+        options: {
+          aspectRatio: 0.7,
+          scales: {
+            x: {
+              ticks: {
+                callback: function (value, index, ticks) {
+                  return months[index];
+                }
+              }
+            },
+            y: {
+
+              position: 'left',
+              ticks: {
+                callback: function (value, index, ticks) {
+                  return this.getLabelForValue(value);
+                },
+                autoSkip: false
+              }
+            },
+            y2: {
+              title: {
+                display: true,
+                text: sortLabels[sortBy]
+              },
+              position: 'right',
+              grid: {
+                drawOnChartArea: false // only want the grid lines for one axis to show up
+              },
+              ticks: {
+                callback: function (value, index, ticks) {
+                  return visData.y2[index];
+                },
+                autoSkip: false
+              }
+            }
+          },
+          indexAxis: 'y',
+          plugins: {
+            subtitle: {
+              display: true,
+              text: function () {
+                if (sortBy) {
+                  return `Sorted by ${sortBy}, high to low`;
+                } else {
+                  return `Sorted by order of response to month0 surveys, most recent to earliest`;
+                }
+              }
+            },
+            legend: {
+              display: false
+            },
+            gradientLegend: {
+              containerID: `legend${config.name}${elem}`,
+              minMax: minMax,
+              config: config
+            }
+          }
+        },
+        plugins: [gradientLegendPlugin]
+      });
+
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  let ttcConfig = [
+    {
+      name: "ttcIssue",
+      type: "mean",
+      issueOrPr: "issue",
+      datalabels: true
+    },
+    {
+      name: "ttcIssueMed",
+      type: "median",
+      issueOrPr: "issue",
+      datalabels: true
+    },
+    {
+      name: "ttcPR",
+      type: "mean",
+      issueOrPr: "pr",
+      datalabels: true
+    },
+    {
+      name: "ttcPRMed",
+      type: "median",
+      issueOrPr: "pr",
+      datalabels: true
+    }
+  ]
+
+  ttcConfig.map(function (config) {
+    config.title = `Time to close ${config.issueOrPr} (${config.type})`;
+    generateElem(config, "aggregateAnchor", true);
+    generateTTCChart(config, "age", "aggregateAnchor");
+  });
+
+</script>

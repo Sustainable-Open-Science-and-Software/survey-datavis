@@ -33,6 +33,7 @@ const htmlLegendPlugin = {
     afterUpdate(chart, args, options) {
         const ul = getOrCreateLegendList(chart, options.containerID);
         const boxes = options.boxes;
+        console.log("hello");
 
         // Remove old legend items
         while (ul.firstChild) {
