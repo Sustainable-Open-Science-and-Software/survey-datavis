@@ -38,15 +38,15 @@ Aggregate survey data in table format
 
 
   const stripeTTCData = function (data, attr, meanOrMedian) {
-
+    //filter out dud data - no founding date, no complete survey
+    data = data.filter((proj) => agesByProjName[proj.name]);
     //can't sort by age without a year... 
-    data = data.map(function (elem) {
+    data = data.map(function (elem) {   
       let y2 = agesByProjName[elem.name];
       y2 = new Date(y2).getFullYear();
       elem.y2 = y2;
       return elem;
     });
-
 
     //this data is more deeply nested, need to override default sort
     data.sort(function (a, b) {
@@ -83,8 +83,6 @@ Aggregate survey data in table format
       }
     };
 
-
-
     Object.values(data).map(function (row) {
       if (row.name) {
         let e = row[attr], m0, m6, m12;
@@ -106,7 +104,6 @@ Aggregate survey data in table format
       }
     });
     return visData;
-
   }
 
   const gradientLegendPlugin = {
@@ -141,7 +138,6 @@ Aggregate survey data in table format
       document.getElementById(options.containerID).before(legendTxt);
     }
   }
-
 
   const generateTTCChart = function (config, sortBy, elem) {
     try {
