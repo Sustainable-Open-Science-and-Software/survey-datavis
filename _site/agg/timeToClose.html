@@ -1183,7 +1183,7 @@ function aggTable(config) {
     //filter out dud data - no founding date, no complete survey
     data = data.filter((proj) => agesByProjName[proj.name]);
     //can't sort by age without a year... 
-    data = data.map(function (elem) {   
+    data = data.map(function (elem) {
       let y2 = agesByProjName[elem.name];
       y2 = new Date(y2).getFullYear();
       elem.y2 = y2;
@@ -1276,8 +1276,12 @@ function aggTable(config) {
       legendScaleBox.appendChild(boxSpan);
       legendScaleBox.appendChild(highScale);
 
-      let legendTxt = `${config.type} time to resolve ${config.issueOrPr}:`
-      document.getElementById(options.containerID).before(legendTxt);
+      let legendTxt = document.createTextNode(
+        `${config.type} time to resolve ${config.issueOrPr}:`);
+      let legendTxtContainer = document.createElement("div");
+      legendTxtContainer.appendChild(legendTxt);
+      legendTxtContainer.classList = "legendGuidance";
+      document.getElementById(options.containerID).before(legendTxtContainer);
     }
   }
 
